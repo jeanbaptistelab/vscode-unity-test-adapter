@@ -265,6 +265,7 @@ export class TestRunner {
 			// Only a single test case requested
 			this.checkTestCaseResult(node, runResult, run);
 		}
+		run.appendOutput(runResult);
 	}
 
 	checkTestCaseResult(
@@ -390,7 +391,7 @@ export class TestRunner {
 		}
 		if (this.suiteProcess !== undefined) {
 			if (this.suiteProcess.pid !== undefined) {
-				tree_kill(this.suiteProcess.pid);
+				tree_kill(this.suiteProcess.pid, 'SIGKILL');
 			}
 		}
 	}
