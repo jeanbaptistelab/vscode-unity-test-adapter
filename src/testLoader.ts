@@ -157,7 +157,9 @@ export class TestLoader {
 		if (!vscode.workspace.workspaceFolders) {
 			return []; // handle the case of no open folders
 		}
-
+		let allItems:string[] = [];
+		this.controller.items.forEach(i => allItems.push(i.id));
+		allItems.forEach(i => this.controller.items.delete(i));
 		return Promise.all(
 			vscode.workspace.workspaceFolders.map(async workspaceFolder => {
 				const pattern = new vscode.RelativePattern(workspaceFolder, '**/*.c');
