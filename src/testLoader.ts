@@ -12,7 +12,7 @@ export class TestLoader {
 	testSourceFileRegex: string;
 	testCaseRegex: string;
 
-	constructor(private controller: vscode.TestController) {
+	constructor(private controller: vscode.TestController, private logger: vscode.LogOutputChannel) {
 		this.prettyTestCaseRegex = ConfigurationProvider.getString('prettyTestCaseRegex');
 		this.prettyTestFileRegex = ConfigurationProvider.getString('prettyTestFileRegex');
 		this.unitUnderTestFolder = ConfigurationProvider.getPath('unitUnderTestFolder');
@@ -20,6 +20,7 @@ export class TestLoader {
 		this.testSourceFolder = ConfigurationProvider.getPath('testSourceFolder');
 		this.testSourceFileRegex = ConfigurationProvider.getString('testSourceFileRegex');
 		this.testCaseRegex = ConfigurationProvider.getString('testCaseRegex');
+		this.logger = logger;
 
 		// When text documents are open, parse tests in them.
 		vscode.workspace.onDidOpenTextDocument(document =>
@@ -161,11 +162,18 @@ export class TestLoader {
 				// And, finally, delete TestItems for removed files. This is simple, since
 				// we use the URI as the TestItem's ID.
 				watcher.onDidDelete(uri => controller.items.delete(uri.toString()));
-
-				for (const file of await vscode.workspace.findFiles(pattern)) {
-					this.getOrCreateTestFile(file);
+				this.logger.info("Discovering tests...");
+				let foundTest = false;
+				for (const [index, file] of (await vscode.workspace.findFiles(pattern)).entries()) {
+					let result = this.getOrCreateTestFile(file);
+					if (!foundTest) {
+						foundTest = !!result;
+					}
 				}
-
+				if(!foundTest) {
+					this.logger.warn("No unity tests found!");
+				}
+				this.logger.info("Done");
 				return watcher;
 			})
 		);

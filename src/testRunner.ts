@@ -33,7 +33,7 @@ export class TestRunner {
 		return this._debugTestExecutable;
 	}
 
-	constructor() {
+	constructor(private logger: vscode.LogOutputChannel) {
 		this.preBuildCommand = ConfigurationProvider.getString('preBuildCommand');
 		this.testBuildApplication = ConfigurationProvider.getString('testBuildApplication');
 		this.testBuildCwdPath = ConfigurationProvider.getPath('testBuildCwdPath');
@@ -43,6 +43,7 @@ export class TestRunner {
 		this.testExecutableArgs = ConfigurationProvider.getString('testExecutableArgs');
 		this.testExecutableArgNameFilterRegex = ConfigurationProvider.getString('testExecutableArgNameFilterRegex');
 		this.debugConfiguration = ConfigurationProvider.getString('debugConfiguration');
+		this.logger = logger;
 
 		vscode.workspace.onDidChangeConfiguration(event => {
 			if (vscode.workspace.workspaceFolders !== undefined) {
@@ -177,8 +178,11 @@ export class TestRunner {
 			runResult = await this.runSingleTestCase(node);
 		}
 
-		if (runResult.error && runResult.error.signal) {
-			run.errored(node, new vscode.TestMessage('Cannot run test executable.'));
+		if (runResult.error && (runResult.error.signal || runResult.error.code)) {
+			run.errored(node, new vscode.TestMessage('Error runing test executable.'));
+			if (runResult.error.signal) {
+				run.errored(node, new vscode.TestMessage(`Got signal: ${runResult.error.signal}`));
+			}
 			run.errored(node, new vscode.TestMessage(runResult.error.stack));
 			return;
 		}
@@ -321,8 +325,8 @@ export class TestRunner {
 					},
 				);
 			});
-		} catch {
-
+		} catch (e) {
+			this.logger.warn(`Exception while running test: ${e}`);
 		}
 		finally {
 			release();

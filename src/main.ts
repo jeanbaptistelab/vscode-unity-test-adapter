@@ -7,10 +7,10 @@ let testRunner: TestRunner;
 
 export async function activate(context: vscode.ExtensionContext) {
 	const controller = vscode.tests.createTestController('unity-test-adapter', 'Unity Test Controller');
-
+	const logger = vscode.window.createOutputChannel("Unity test", {log: true});
 	if (vscode.workspace.workspaceFolders !== undefined) {
-		testLoader = new TestLoader(controller);
-		testRunner = new TestRunner();
+		testLoader = new TestLoader(controller, logger);
+		testRunner = new TestRunner(logger);
 
 		context.subscriptions.push(controller);
 		context.subscriptions.push(vscode.commands.registerCommand("unityExplorer.debugTestExecutable", () => { return testRunner.debugTestExecutable; }));
