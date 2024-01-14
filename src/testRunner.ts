@@ -269,6 +269,9 @@ export class TestRunner {
 			// Only a single test case requested
 			this.checkTestCaseResult(node, runResult, run);
 		}
+		if (runResult.indexOf('\r\n') === -1) {
+			runResult = runResult.replace(/\n/g,'\r\n');
+		}
 		run.appendOutput(runResult);
 	}
 
