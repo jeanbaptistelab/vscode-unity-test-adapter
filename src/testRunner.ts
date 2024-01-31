@@ -146,16 +146,16 @@ export class TestRunner {
 			run.errored(node, new vscode.TestMessage('Cannot find test executable.'));
 			return;
 		}
-
-		let runResult = await this.buildTest(node);
-
-		if (run.token.isCancellationRequested) {
-			return;
-		}
-		else if (runResult.error) {
-			run.errored(node, new vscode.TestMessage('Cannot build test executable.'));
-			run.errored(node, new vscode.TestMessage(runResult.stderr));
-			return;
+		if (this.testBuildApplication !== '') {
+			let runResult = await this.buildTest(node);
+			if (run.token.isCancellationRequested) {
+				return;
+			}
+			else if (runResult.error) {
+				run.errored(node, new vscode.TestMessage('Cannot build test executable.'));
+				run.errored(node, new vscode.TestMessage(runResult.stderr));
+				return;
+			}
 		}
 
 		if (this.preBuildCommand !== '') {
@@ -165,7 +165,7 @@ export class TestRunner {
 				return;
 			}
 		}
-
+		let runResult;
 		if (run.token.isCancellationRequested) {
 			return;
 		}
@@ -184,7 +184,6 @@ export class TestRunner {
 				run.errored(node, new vscode.TestMessage(`Got signal: ${runResult.error.signal}`));
 			}
 			run.errored(node, new vscode.TestMessage(runResult.error.stack));
-			return;
 		}
 
 		return runResult;
@@ -298,7 +297,9 @@ export class TestRunner {
 
 				if (match !== null) {
 					//Regular Unity format
-					run.failed(node, new vscode.TestMessage(match[4]));
+					let msg = new vscode.TestMessage(match[4]);
+					msg.location = new vscode.Location(node.uri!, new vscode.Position(parseInt(match[1]), 0));
+					run.failed(node, msg);
 				}
 				else {
 					testFailRegex = new RegExp(node.id + '.*' + this.testFailLineNrRegex + '.*' + this.testResultString);
@@ -371,8 +372,10 @@ export class TestRunner {
 	private async runEntireTestFile(node: vscode.TestItem): Promise<any> {
 		if (node.uri !== undefined) {
 			let exePath = '\"' + path.parse(node.uri.fsPath).name.replace(new RegExp('(.*)'), this.testExecutableRegex) + '\"';
-
-			return await this.runCommand(ConfigurationProvider.getWorkspace(node.uri), exePath + ' ' + this.testExecutableArgs);
+			if (this.testExecutableArgs) {
+				exePath = exePath + ' ' + this.testExecutableArgs;
+			}
+			return await this.runCommand(ConfigurationProvider.getWorkspace(node.uri), exePath);
 		}
 	}
 
