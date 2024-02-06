@@ -203,18 +203,20 @@ export class TestRunner {
 			return;
 		}
 
-		let runResult = await this.buildTest(node);
-
-		if (run.token.isCancellationRequested) {
-			return;
+		if (this.testBuildApplication !== '') {
+			let runResult = await this.buildTest(node);
+			if (run.token.isCancellationRequested) {
+				return;
+			}
+			else if (runResult.error) {
+				run.errored(node, new vscode.TestMessage('Cannot build test executable.'));
+				run.errored(node, new vscode.TestMessage(runResult.stderr));
+				return;
+			}
 		}
-		else if (runResult.error) {
-			run.errored(node, new vscode.TestMessage('Cannot build test executable.'));
-			return;
-		}
-
+		let result;
 		if (this.preBuildCommand !== '') {
-			let result = await this.runCommand(ConfigurationProvider.getWorkspace(node.uri), this.preBuildCommand);
+			result = await this.runCommand(ConfigurationProvider.getWorkspace(node.uri), this.preBuildCommand);
 			if (result.error) {
 				vscode.window.showErrorMessage('Cannot run pre-build command.');
 				return;
@@ -229,10 +231,6 @@ export class TestRunner {
 			if (!await vscode.debug.startDebugging(ConfigurationProvider.getWorkspace(node.uri), this.debugConfiguration)) {
 				vscode.window.showErrorMessage('Debugger could not be started.');
 			}
-		}
-
-		if (runResult.error) {
-			run.errored(node, new vscode.TestMessage('Cannot run test executable.'));
 		}
 
 		this._debugTestExecutable = "";
